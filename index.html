@@ -33,6 +33,7 @@ h1 {
   position: absolute;
   perspective: 1000px;
   cursor: grab;
+  touch-action: none;
   transition: all 0.3s ease;
 }
 
@@ -198,6 +199,7 @@ function makeDraggable(el){
 
   // Mobile
   el.addEventListener("touchstart", (e)=>{
+    e.preventDefault();
     const touch = e.touches[0];
     const rect = el.getBoundingClientRect();
 
@@ -209,6 +211,7 @@ function makeDraggable(el){
   });
 
   document.addEventListener("touchmove", (e)=>{
+    e.preventDefault();
     if(!isDown) return;
 
     moved = true;
