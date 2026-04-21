@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarot 72 Lá</title>
+<style>
+body {
+  margin: 0;
+  padding: 20px;
+  background: #0b0f1a;
+  font-family: Arial, sans-serif;
+  color: white;
+  overflow-x: hidden;
+}
+
+h1 {
+  text-align: center;
+}
+
+.table {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  margin: auto;
+  background: radial-gradient(circle, #0f172a, #020617);
+  border-radius: 20px;
+}
+
+.card {
+  width: 90px;
+  height: 140px;
+  position: absolute;
+  perspective: 1000px;
+  cursor: grab;
+  transition: all 0.3s ease;
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card-front img,
+.card-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
+
+button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #6b46c1;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.controls{
+text-align:center;
+margin-bottom:20px;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Rút 1 Lá Tarot</h1>
+
+<div class="controls">
+<button onclick="shuffleCards()">🔀 Xào bài trải bàn</button>
+<button onclick="spreadCards()">🃏 Trải lại</button>
+</div>
+
+<div class="table" id="table"></div>
+
+<script>
+
+// ảnh mặt sau
+const backImage = "https://png.pngtree.com/png-clipart/20210704/original/pngtree-tarot-card-of-the-sun-moon-stars-mysterious-galaxy-png-image_6476323.jpg";
+
+// 🔽 Thêm ảnh tarot của bạn vào đây
+const tarot = [
+"images/tarot1.jpg",
+"images/tarot2.jpg",
+"images/tarot3.jpg",
+"images/tarot4.jpg",
+"images/tarot5.jpg",
+"images/tarot6.jpg",
+"images/tarot7.jpg",
+"images/tarot8.jpg"
+];
+
+let cards = [];
+for (let i = 0; i < 72; i++) {
+  cards.push(tarot[i % tarot.length]);
+}
+
+const table = document.getElementById("table");
+
+// tắt chuột phải
+document.addEventListener("contextmenu", function(e){
+  e.preventDefault();
+});
+
+function createCards(){
+  table.innerHTML = "";
+
+  cards.forEach((card) => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <div class="card-inner">
+        <div class="card-front">
+          <img src="${backImage}">
+        </div>
+        <div class="card-back">
+          <img src="${card}">
+        </div>
+      </div>
+    `;
+
+    makeDraggable(div);
+
+    // double click lật nhanh
+    div.addEventListener("dblclick", () => {
+      div.classList.toggle("flipped");
+    });
+
+    table.appendChild(div);
+  });
+
+  spreadCards();
+}
+
+function makeDraggable(el){
+  let offsetX = 0;
+  let offsetY = 0;
+  let isDown = false;
+  let moved = false;
+
+  el.addEventListener("mousedown", (e)=>{
+    el.style.cursor = 'grabbing';
+    isDown = true;
+    moved = false;
+    offsetX = e.offsetX;
+    offsetY = e.offsetY;
+    el.style.zIndex = 999;
+  });
+
+  document.addEventListener("mousemove", (e)=>{
+    if(!isDown) return;
+
+    moved = true;
+
+    const rect = table.getBoundingClientRect();
+
+    el.style.left = (e.clientX - rect.left - offsetX) + "px";
+    el.style.top = (e.clientY - rect.top - offsetY) + "px";
+  });
+
+  document.addEventListener("mouseup", ()=>{
+    if(!isDown) return;
+
+    el.style.cursor = 'grab';
+
+    // nếu không di chuyển thì lật bài
+    if(!moved){
+      el.classList.toggle("flipped");
+    }
+
+    isDown = false;
+  });
+}
+
+function resetAllCards(){
+  const allCards = document.querySelectorAll(".card");
+  allCards.forEach(card=>{
+    card.classList.remove("flipped");
+  });
+}
+
+function spreadCards(){
+  resetAllCards();
+  const allCards = document.querySelectorAll(".card");
+
+  allCards.forEach(card => {
+    const x = Math.random() * (table.clientWidth - 100);
+    const y = Math.random() * (table.clientHeight - 150);
+    const rotate = Math.random() * 40 - 20;
+
+    card.style.left = x + "px";
+    card.style.top = y + "px";
+    card.style.transform = `rotate(${rotate}deg)`;
+  });
+}
+
+function shuffleCards(){
+  resetAllCards();
+  cards.sort(() => Math.random() - 0.5);
+  spreadCards();
+}
+
+createCards();
+
+</script>
+
+</body>
+</html>
