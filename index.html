@@ -46,7 +46,7 @@ margin-top:5px;
 /* Khu vực rút bài */
 .drop-zone{
   width:100%;
-  height:25vh;
+  height:22vh;
   margin-top:10px;
   border:2px dashed #6b46c1;
   border-radius:20px;
@@ -160,6 +160,45 @@ button {
 padding:10px;
 }
 
+.zones{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+align-items:stretch;
+}
+
+@media (max-width:768px){
+.zones{
+grid-template-columns:1fr;
+}
+
+.drop-zone{
+height:16vh;
+font-size:12px;
+}
+}
+}
+
+#explainZone{
+padding:15px;
+align-items:flex-start;
+justify-content:flex-start;
+overflow:auto;
+}
+
+#explainTitle{
+font-size:16px;
+font-weight:bold;
+margin-bottom:8px;
+color:#c4b5fd;
+}
+
+#explainText{
+color:#ddd;
+font-size:14px;
+line-height:1.5;
+}
+
 
 
 /* hiệu ứng tarot chuyên nghiệp */
@@ -215,8 +254,18 @@ transition: transform 0.6s, box-shadow 0.3s;
 <div class="main">
 <div class="table" id="table"></div>
 
+<div class="zones">
 <div class="drop-zone" id="dropZone">
 Kéo lá bài vào đây để rút bài
+</div>
+
+<div class="drop-zone" id="explainZone">
+<div>
+<div id="explainTitle">Tên lá bài</div>
+<div id="explainText">Giải thích lá bài</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 
@@ -237,18 +286,95 @@ const tarot = [
 "images/tarot8.jpg"
 ];
 
+// tên lá bài
+const tarotTitle = [
+"The Fool",
+"The Magician",
+"The High Priestess",
+"The Empress",
+"The Emperor",
+"The Hierophant",
+"The Lovers",
+"The Chariot"
+];
+
+// giải thích lá bài
+const tarotText = [
+"Ý nghĩa lá bài 1",
+"Ý nghĩa lá bài 2",
+"Ý nghĩa lá bài 3",
+"Ý nghĩa lá bài 4",
+"Ý nghĩa lá bài 5",
+"Ý nghĩa lá bài 6",
+"Ý nghĩa lá bài 7",
+"Ý nghĩa lá bài 8"
+];
+
 let cards = [];
 for (let i = 0; i < 72; i++) {
-  cards.push(tarot[i % tarot.length]);
+  cards.push({
+    image: tarot[i % tarot.length],
+    text: tarotText[i % tarotText.length],
+    title: tarotTitle[i % tarotTitle.length]
+  });
 }
 
 const table = document.getElementById("table");
 const dropZone = document.getElementById("dropZone");
+const explainZone = document.getElementById("explainZone");
+const explainText = document.getElementById("explainText");
+const explainTitle = document.getElementById("explainTitle");
 
 // tắt chuột phải
 document.addEventListener("contextmenu", function(e){
   e.preventDefault();
 });
+
+function updateExplain(el){
+  const rect = explainZone.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+
+  const centerX = elRect.left + elRect.width / 2;
+  const centerY = elRect.top + elRect.height / 2;
+
+  const inZone = (
+    centerX > rect.left &&
+    centerX < rect.right &&
+    centerY > rect.top &&
+    centerY < rect.bottom
+  );
+
+  if(inZone && el.classList.contains("flipped")){
+    explainTitle.innerText = el.dataset.title || "Tên lá bài";
+    explainText.innerText = el.dataset.text || "Giải thích lá bài";
+    return;
+  }
+
+  // kiểm tra xem còn lá nào trong vùng không
+  let found = false;
+
+  document.querySelectorAll(".card.flipped").forEach(card=>{
+    const r = card.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+
+    if(
+      cx > rect.left &&
+      cx < rect.right &&
+      cy > rect.top &&
+      cy < rect.bottom
+    ){
+      explainTitle.innerText = card.dataset.title;
+      explainText.innerText = card.dataset.text;
+      found = true;
+    }
+  });
+
+  if(!found){
+    explainTitle.innerText = "Tên lá bài";
+    explainText.innerText = "Giải thích lá bài";
+  }
+}
 
 function createCards(){
   table.innerHTML = "";
@@ -256,6 +382,8 @@ function createCards(){
   cards.forEach((card) => {
     const div = document.createElement("div");
     div.className = "card";
+    div.dataset.text = card.text;
+    div.dataset.title = card.title;
 
     div.innerHTML = `
       <div class="card-inner">
@@ -263,15 +391,16 @@ function createCards(){
           <img src="${backImage}">
         </div>
         <div class="card-back">
-          <img src="${card}">
+          <img src="${card.image}">
         </div>
       </div>
     `;
 
     makeDraggable(div);
 
-    div.addEventListener("dblclick", () => {
+    div.addEventListener("click", () => {
       div.classList.toggle("flipped");
+      updateExplain(div);
     });
 
     table.appendChild(div);
@@ -284,11 +413,9 @@ function makeDraggable(el){
   let offsetX = 0;
   let offsetY = 0;
   let isDown = false;
-  let moved = false;
 
   el.addEventListener("mousedown", (e)=>{
     isDown = true;
-    moved = false;
     offsetX = e.offsetX;
     offsetY = e.offsetY;
     el.style.zIndex = Date.now();
@@ -297,55 +424,42 @@ function makeDraggable(el){
   document.addEventListener("mousemove", (e)=>{
     if(!isDown) return;
 
-    moved = true;
     const rect = table.getBoundingClientRect();
 
     el.style.left = (e.clientX - rect.left - offsetX) + "px";
     el.style.top = (e.clientY - rect.top - offsetY) + "px";
+
+    updateExplain(el);
   });
 
   document.addEventListener("mouseup", ()=>{
-    if(!isDown) return;
-
-    if(!moved){
-      el.classList.toggle("flipped");
-    }
-
     isDown = false;
   });
 
   // mobile
   el.addEventListener("touchstart", (e)=>{
-    e.preventDefault();
     const touch = e.touches[0];
     const rect = el.getBoundingClientRect();
 
     isDown = true;
-    moved = false;
     offsetX = touch.clientX - rect.left;
     offsetY = touch.clientY - rect.top;
     el.style.zIndex = Date.now();
   });
 
   document.addEventListener("touchmove", (e)=>{
-    e.preventDefault();
     if(!isDown) return;
 
-    moved = true;
     const touch = e.touches[0];
     const rect = table.getBoundingClientRect();
 
     el.style.left = (touch.clientX - rect.left - offsetX) + "px";
     el.style.top = (touch.clientY - rect.top - offsetY) + "px";
+
+    updateExplain(el);
   },{passive:false});
 
   document.addEventListener("touchend", ()=>{
-    if(!isDown) return;
-
-    if(!moved){
-      el.classList.toggle("flipped");
-    }
-
     isDown = false;
   });
 }
@@ -354,6 +468,8 @@ function resetAllCards(){
   document.querySelectorAll(".card").forEach(card=>{
     card.classList.remove("flipped");
   });
+  explainTitle.innerText = "Tên lá bài";
+    explainText.innerText = "Giải thích lá bài";
 }
 
 function spreadCards(){
@@ -370,10 +486,28 @@ function spreadCards(){
   });
 }
 
+function animateShuffle(){
+  const centerX = table.clientWidth / 2;
+  const centerY = table.clientHeight / 2;
+
+  document.querySelectorAll(".card").forEach((card,i)=>{
+    setTimeout(()=>{
+      card.style.transition = "all 0.4s ease";
+      card.style.left = (centerX - 30) + "px";
+      card.style.top = (centerY - 40) + "px";
+      card.style.transform = `rotate(${Math.random()*360}deg)`;
+    }, i * 5);
+  });
+
+  setTimeout(()=>{
+    spreadCards();
+  }, 600);
+}
+
 function shuffleCards(){
   resetAllCards();
   cards.sort(() => Math.random() - 0.5);
-  spreadCards();
+  animateShuffle();
 }
 
 createCards();
