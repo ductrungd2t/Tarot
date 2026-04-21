@@ -99,7 +99,7 @@ margin-bottom:20px;
 <script>
 
 // ảnh mặt sau
-const backImage = "https://png.pngtree.com/png-clipart/20210704/original/pngtree-tarot-card-of-the-sun-moon-stars-mysterious-galaxy-png-image_6476323.jpg";
+const backImage = "https://i.imgur.com/6X4F9Qp.png";
 
 // 🔽 Thêm ảnh tarot của bạn vào đây
 const tarot = [
@@ -162,13 +162,14 @@ function makeDraggable(el){
   let isDown = false;
   let moved = false;
 
+  // Desktop
   el.addEventListener("mousedown", (e)=>{
     el.style.cursor = 'grabbing';
     isDown = true;
     moved = false;
     offsetX = e.offsetX;
     offsetY = e.offsetY;
-    el.style.zIndex = 999;
+    el.style.zIndex = Date.now();
   });
 
   document.addEventListener("mousemove", (e)=>{
@@ -187,7 +188,42 @@ function makeDraggable(el){
 
     el.style.cursor = 'grab';
 
-    // nếu không di chuyển thì lật bài
+    // click thì lật
+    if(!moved){
+      el.classList.toggle("flipped");
+    }
+
+    isDown = false;
+  });
+
+  // Mobile
+  el.addEventListener("touchstart", (e)=>{
+    const touch = e.touches[0];
+    const rect = el.getBoundingClientRect();
+
+    isDown = true;
+    moved = false;
+    offsetX = touch.clientX - rect.left;
+    offsetY = touch.clientY - rect.top;
+    el.style.zIndex = Date.now();
+  });
+
+  document.addEventListener("touchmove", (e)=>{
+    if(!isDown) return;
+
+    moved = true;
+
+    const touch = e.touches[0];
+    const rect = table.getBoundingClientRect();
+
+    el.style.left = (touch.clientX - rect.left - offsetX) + "px";
+    el.style.top = (touch.clientY - rect.top - offsetY) + "px";
+  }, {passive:false});
+
+  document.addEventListener("touchend", ()=>{
+    if(!isDown) return;
+
+    // chạm = lật
     if(!moved){
       el.classList.toggle("flipped");
     }
