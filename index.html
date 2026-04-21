@@ -226,18 +226,6 @@ function makeDraggable(el){
   document.addEventListener("mouseup", ()=>{
     if(!isDown) return;
 
-    const rect = dropZone.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-
-    if(
-      elRect.left < rect.right &&
-      elRect.right > rect.left &&
-      elRect.top < rect.bottom &&
-      elRect.bottom > rect.top
-    ){
-      el.classList.add("flipped");
-    }
-
     if(!moved){
       el.classList.toggle("flipped");
     }
